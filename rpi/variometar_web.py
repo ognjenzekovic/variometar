@@ -10,6 +10,7 @@ import json
 import datetime
 import os
 import pytz
+from gpiozero import PWMOutputDevice
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'variometer_secret'
@@ -19,6 +20,15 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 i2c = busio.I2C(board.SCL, board.SDA)
 bmp = adafruit_bmp3xx.BMP3XX_I2C(i2c)
 bmp.sea_level_pressure = 1013.25
+
+#buzzer setup
+BUZZER_PIN = 18
+try:
+    buzzer = PWMOutputDevice(BUZZER_PIN)
+    print("Buzzer initialized on GPIO 18")
+except Exception as e:
+    print(f"Buzzer setup failed: {e}")
+    buzzer = None
 
 # Global variables
 current_data = {
@@ -34,11 +44,42 @@ flight_data = []
 flight_start_time = None
 altitude_history = []
 
+audio_enabled = True
+last_audio_time = 0
+
 BELGRADE_TZ = pytz.timezone('Europe/Belgrade')
 
 def get_belgrade_time():
     """Dobij trenutno vreme u Beogradu"""
     return datetime.datetime.now(BELGRADE_TZ)
+
+def play_variometer_sound(climb_rate):
+    """Generiše audio feedback na osnovu brzine penjanja/spuštanja"""
+    global buzzer, audio_enabled
+    
+    if not buzzer or not audio_enabled:
+        return
+        
+    try:
+        # Ako je brzina mala, nema tona
+        if abs(climb_rate) < 0.1:
+            buzzer.value = 0  # Stop buzzer
+            return
+        
+        if climb_rate > 0:  # Penjanje
+            # Visoki ton, brži kada je veći climb rate
+            frequency = int(800 + (climb_rate * 200))  # 800-2000Hz
+            buzzer.frequency = min(frequency, 2000)
+            buzzer.value = 0.5  # 50% duty cycle
+            
+        else:  # Spuštanje
+            # Nizak ton, sporiji kada je veći sink rate
+            frequency = int(400 - (abs(climb_rate) * 50))  # 200-400Hz
+            buzzer.frequency = max(frequency, 200)
+            buzzer.value = 0.3  # Tiši za spuštanje
+            
+    except Exception as e:
+        print(f"Buzzer error: {e}")
 
 def calculate_climb_rate():
     """Kalkuliše brzinu penjanja/spuštanja"""
@@ -68,11 +109,16 @@ def calculate_climb_rate():
 
 def read_sensor():
     """Background thread za čitanje senzora"""
-    global current_data, flight_recording
+    global current_data, flight_recording, audio_enabled, last_audio_time
     
     while True:
         try:
             climb_rate = calculate_climb_rate()
+
+            current_time = time.time()
+            if audio_enabled and (current_time - last_audio_time) > 0.8:
+                play_variometer_sound(climb_rate)
+                last_audio_time = current_time
             
             current_data = {
                 "temperature": round(bmp.temperature, 1),
@@ -92,7 +138,7 @@ def read_sensor():
         except Exception as e:
             print(f"Sensor error: {e}")
         
-        time.sleep(2.0)
+        time.sleep(1.0)
 
 # Pokreni sensor thread
 sensor_thread = threading.Thread(target=read_sensor, daemon=True)
@@ -427,6 +473,23 @@ def delete_flight(filename):
     except Exception as e:
         print(f"Error deleting flight: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
+    
+@app.route('/api/audio', methods=['POST'])
+def toggle_audio():
+    """Uključi/isključi audio feedback"""
+    global audio_enabled, buzzer
+    data = request.get_json()
+    audio_enabled = data.get('enabled', True)
+    
+    if not audio_enabled and buzzer:
+        buzzer.value = 0  # Sigurno ugasi buzzer
+    
+    return jsonify({"audio_enabled": audio_enabled})
+
+@app.route('/api/audio', methods=['GET'])
+def get_audio_status():
+    """Dobij status audio funkcionalnosti"""
+    return jsonify({"audio_enabled": audio_enabled})
 
 @socketio.on('start_flight')
 def handle_start_flight():
@@ -519,6 +582,13 @@ def update_flight_stats(data):
     flight_stats["temp_sum"] += temp
 
 if __name__ == '__main__':
-    print("🌐 Variometer WebSocket server starting on http://192.168.4.1:5000")
-    print("📱 Flutter app can connect to ws://192.168.4.1:5000")
-    socketio.run(app, host='0.0.0.0', port=5000, debug=False, allow_unsafe_werkzeug=True)
+    try:
+        print("🌐 Variometer WebSocket server starting on http://192.168.4.1:5000")
+        socketio.run(app, host='0.0.0.0', port=5000, debug=False, allow_unsafe_werkzeug=True)
+    except KeyboardInterrupt:
+        print("Shutting down variometer...")
+    finally:
+        # Cleanup
+        if buzzer:
+            buzzer.close()
+        print("Cleanup completed")

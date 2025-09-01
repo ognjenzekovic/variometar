@@ -45,6 +45,8 @@ class _VariometerHomePageState extends State<VariometerHomePage>
 
   bool isRecording = false;
 
+  bool isAudioEnabled = true;
+
   List<dynamic> flights = [];
 
   String get rpiAddress => isHotspotMode ? '192.168.4.1' : '192.168.67.251';
@@ -57,7 +59,7 @@ class _VariometerHomePageState extends State<VariometerHomePage>
   void initState() {
     super.initState();
     _animationController = AnimationController(
-      duration: Duration(milliseconds: 300),
+      duration: Duration(milliseconds: 150),
       vsync: this,
     );
     _scaleAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
@@ -66,6 +68,7 @@ class _VariometerHomePageState extends State<VariometerHomePage>
 
     connectToSocket();
     loadFlights();
+    loadAudioStatus();
   }
 
   void connectToSocket() {
@@ -97,11 +100,11 @@ class _VariometerHomePageState extends State<VariometerHomePage>
         });
 
         // Animacija za climb rate promene
-        if (climbRate.abs() > 0.5) {
-          _animationController.forward().then((_) {
-            _animationController.reverse();
-          });
-        }
+        // if (climbRate.abs() > 0.5) {
+        //   _animationController.forward().then((_) {
+        //     _animationController.reverse();
+        //   });
+        // }
       });
 
       socket!.on('flight_started', (_) {
@@ -168,6 +171,49 @@ class _VariometerHomePageState extends State<VariometerHomePage>
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Greška pri brisanju leta')),
+      );
+    }
+  }
+
+  Future<void> loadAudioStatus() async {
+    try {
+      final response =
+          await http.get(Uri.parse('http://$rpiAddress:5000/api/audio'));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          isAudioEnabled = data['audio_enabled'] ?? true;
+        });
+      }
+    } catch (e) {
+      print('Greška pri učitavanju audio statusa: $e');
+    }
+  }
+
+  Future<void> toggleAudio(bool enabled) async {
+    try {
+      final response = await http.post(
+        Uri.parse('http://$rpiAddress:5000/api/audio'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'enabled': enabled}),
+      );
+
+      if (response.statusCode == 200) {
+        setState(() {
+          isAudioEnabled = enabled;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(enabled ? 'Audio uključen' : 'Audio isključen'),
+            duration: Duration(seconds: 1),
+          ),
+        );
+      }
+    } catch (e) {
+      print('Greška pri menjanju audio statusa: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Greška pri menjanju audio statusa')),
       );
     }
   }
@@ -257,7 +303,7 @@ class _VariometerHomePageState extends State<VariometerHomePage>
               ),
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: Text('Zatvori'),
+                child: Text('Zatvori', style: TextStyle(color: Colors.white)),
               ),
             ],
           ),
@@ -285,6 +331,9 @@ class _VariometerHomePageState extends State<VariometerHomePage>
           title: Text('Variometar'),
           backgroundColor: Color(0xFF333333),
           bottom: TabBar(
+            indicatorColor: Colors.white,
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.white70,
             tabs: [
               Tab(text: 'Podaci Uživo'),
               Tab(text: 'Snimljeni Letovi'),
@@ -333,13 +382,42 @@ class _VariometerHomePageState extends State<VariometerHomePage>
                                 : Colors.red,
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Text(
-                            socket?.connected == true
-                                ? 'Povezano na $rpiAddress'
-                                : 'Nema konekcije sa $rpiAddress',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  socket?.connected == true
+                                      ? 'Povezano na $rpiAddress'
+                                      : 'Nema konekcije sa $rpiAddress',
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    isAudioEnabled
+                                        ? Icons.volume_up
+                                        : Icons.volume_off,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                  Switch(
+                                    value: isAudioEnabled,
+                                    onChanged: socket?.connected == true
+                                        ? (value) {
+                                            toggleAudio(value);
+                                          }
+                                        : null,
+                                    activeColor: Colors.white,
+                                    inactiveThumbColor: Colors.grey,
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
 
@@ -514,7 +592,7 @@ class _VariometerHomePageState extends State<VariometerHomePage>
                             title: Text(
                               '$formattedDate $formattedTime',
                               style: TextStyle(
-                                  color: Colors.green,
+                                  color: Colors.white,
                                   fontWeight: FontWeight.bold),
                             ),
                             subtitle: Text(
