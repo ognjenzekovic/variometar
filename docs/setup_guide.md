@@ -2,7 +2,7 @@
 
 Complete installation and configuration guide for the IoT variometer on Raspberry Pi 5.
 
-*[Srpska verzija](setup_guide_sr.md)*
+*[Srpska verzija](setup_guide.sr.md)*
 
 ---
 
