@@ -1,115 +1,164 @@
-# IoT Variometar - Diplomski rad
+# IoT Variometer
 
-Variometar za paraglajding sa IoT funkcionalnostima. Sistem koristi Raspberry Pi 5 sa BMP390 barometrijskim senzorom za merenje brzine penjanja/spuštanja i omogućava pristup podacima preko WiFi mreže putem web interfejsa ili mobilne Flutter aplikacije.
+> A paragliding variometer with IoT capabilities — built on Raspberry Pi 5 with a BMP390 barometric sensor. Access real-time flight data over WiFi via a web interface or native Flutter mobile app.
 
-## Funkcionalnosti
+**[Pročitaj na srpskom → README.sr.md](README.sr.md)**
+
+---
+
+![Product](docs/images/product.jpg)
+
+---
+
+## Features
 
 ### Backend (Raspberry Pi 5)
-- Real-time čitanje barometrijskog pritiska, temperature i visine
-- Kalkulacija brzine penjanja/spuštanja sa filtriranjem šuma
-- WiFi hotspot mode za direktan pristup bez interneta
-- WebSocket komunikacija za real-time podatke
-- Automatsko snimanje letova sa statistikama
-- REST API za upravljanje snimljenim letovima
-- JSON za čuvanje podataka
+- Real-time barometric pressure, temperature, and altitude readings
+- Climb/sink rate calculation with noise filtering
+- WiFi hotspot mode for direct access without internet
+- WebSocket communication for real-time data streaming
+- Automatic flight recording with statistics
+- REST API for managing recorded flights
+- JSON-based data storage
 
 ### Web Interface
-- Responzivan dizajn za mobilne uređaje
-- Real-time prikaz podataka sa senzora
-- Start/Stop kontrole za snimanje letova
-- Lista snimljenih letova sa detaljima
-- Mogućnost brisanja letova
+- Mobile-responsive design
+- Live sensor data display
+- Start/Stop controls for flight recording
+- List of recorded flights with details
+- Flight deletion support
 
-### Flutter Mobilna Aplikacija
-- Native Android/iOS aplikacija
-- WebSocket konekcija za real-time podatke
-- Upravljanje letovima (start, stop, pregled, brisanje)
-- Automatsko prebacivanje između hotspot/WiFi režima
+### Flutter Mobile App
+- Native Android/iOS application
+- WebSocket connection for real-time data
+- Full flight management (start, stop, view, delete)
+- Automatic switching between hotspot/WiFi modes
 
-## Tehnička specifikacija
+---
+
+## System Architecture
+
+![Architecture](docs/images/architecture.png)
+
+---
+
+## Screenshots
+
+| Main Screen | Recording Active | Flight Details |
+|:-----------:|:----------------:|:--------------:|
+| ![Main](docs/images/screenshot_main.png) | ![Recording](docs/images/screenshot_recording.png) | ![Details](docs/images/screenshot_details.png) |
+
+---
+
+## Technical Specification
 
 ### Hardware
-- **Raspberry Pi 5** - glavna računarska jedinica
-- **BMP390** - barometrijski senzor (±0.03 hPa)
-- **Power bank 20,000mAh** - napajanje za portabilnost
-- **I2C komunikacija** - konekcija senzora na GPIO pinove
+| Component | Description |
+|-----------|-------------|
+| **Raspberry Pi 5** | Main computing unit |
+| **BMP390** | Barometric sensor (±0.03 hPa accuracy) |
+| **Power bank 20,000mAh** | Portable power supply |
+| **I2C interface** | Sensor connection via GPIO pins |
 
 ### Software Stack
-- **Python 3.11** sa Flask web framework
-- **Flask-SocketIO** - WebSocket komunikacija
-- **Adafruit CircuitPython** biblioteke za BMP390
-- **hostapd + dnsmasq** - WiFi hotspot infrastruktura
-- **Flutter/Dart** - mobilna aplikacija
+| Layer | Technology |
+|-------|------------|
+| Backend | Python 3.11 + Flask |
+| Real-time comms | Flask-SocketIO (WebSocket) |
+| Sensor library | Adafruit CircuitPython BMP3xx |
+| WiFi hotspot | hostapd + dnsmasq |
+| Mobile app | Flutter / Dart |
 
 ### Networking
-- **Hotspot mode**: RPi kreira vlastitu WiFi mrežu (192.168.4.1)
-- **WiFi client mode**: povezivanje na postojeću mrežu
-- **Hibridni pristup**: automatsko prebacivanje između režima
+- **Hotspot mode**: RPi creates its own WiFi network (`192.168.4.1`)
+- **WiFi client mode**: connects to an existing network
+- **Hybrid approach**: automatic switching between modes
 
-## Struktura projekta
+---
+
+## Project Structure
 
 ```
 variometer/
 ├── backend/
-│   ├── variometar_web.py          # Flask web server sa WebSocket
-│   ├── start_variometer.sh        # Startup script sa hotspot setup
+│   ├── variometar_web.py          # Flask web server with WebSocket
+│   ├── start_variometer.sh        # Startup script with hotspot setup
 │   └── requirements.txt           # Python dependencies
 ├── flutter_app/
-│   ├── lib/main.dart              # Flutter aplikacija
+│   ├── lib/main.dart              # Flutter application
 │   └── pubspec.yaml               # Flutter dependencies
 ├── docs/
-│   └── setup_guide.md             # Detaljan setup vodič
+│   ├── images/                    # Architecture, product, screenshots
+│   └── setup_guide.md             # Detailed setup guide
 └── README.md
 ```
 
-## Brza instalacija
+---
 
-1. **Hardware setup**: Povezati BMP390 na RPi5 I2C pinove
-2. **Software**: Pokrenuti setup script za dependencies i konfiguraciju
-3. **Network**: Konfigurisati WiFi hotspot funkcionalnost
-4. **Test**: Verifikovati komunikaciju sa senzorom i web interface
+## Quick Start
 
-Detaljne instrukcije u [docs/setup_guide.md](docs/setup_guide.md)
+1. **Hardware**: Connect BMP390 to RPi5 I2C pins (see [setup guide](docs/setup_guide.md))
+2. **Software**: Run the setup script to install dependencies
+3. **Network**: Configure WiFi hotspot
+4. **Test**: Verify sensor communication and web interface at `http://192.168.4.1:5000`
 
-## Ključni algoritmi
+Full instructions → [docs/setup_guide.md](docs/setup_guide.md)
 
-### Filtriranje brzine penjanja
-- Moving average preko 3-sekundnog prozora (uzima se prosečna vrednost kroz 3 sekunde radi smanjenja šuma)
-- Korišćenje stvarnih timestamp-ova umesto pretpostavljenih intervala
-- Redukcija senzor šuma za stabilno čitanje
+---
 
-### Statistike leta
-Umesto čuvanja svih sirovih podataka, sistem čuva optimizovane statistike:
-- Max/min visina i temperatura
-- Max brzine penjanja/spuštanja  
-- Ukupno trajanje i broj merenja
-- Visinska razlika tokom leta
+## Key Algorithms
 
-## API Endpoints
+### Climb Rate Filtering
+- Moving average over a 3-second window to reduce sensor noise
+- Uses real timestamps instead of assumed fixed intervals
+- Produces stable, reliable readings during flight
+
+### Flight Statistics
+Rather than storing all raw sensor data, the system stores optimized statistics per flight:
+- Max/min altitude and temperature
+- Max climb and sink rates
+- Total duration and sample count
+- Altitude delta over the flight
+
+---
+
+## API Reference
 
 ### WebSocket Events
-- `sensor_data` - Real-time senzor podaci
-- `start_flight` - Pokretanje snimanja leta
-- `stop_flight` - Završetak snimanja leta
+| Event | Direction | Description |
+|-------|-----------|-------------|
+| `sensor_data` | Server → Client | Real-time sensor readings |
+| `start_flight` | Client → Server | Begin flight recording |
+| `stop_flight` | Client → Server | End flight recording |
 
 ### REST API
-- `GET /api/flights` - Lista svih letova
-- `GET /api/flight/<filename>` - Detalji određenog leta
-- `DELETE /api/flight/<filename>` - Brisanje leta
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/flights` | List all recorded flights |
+| `GET` | `/api/flight/<filename>` | Get details of a specific flight |
+| `DELETE` | `/api/flight/<filename>` | Delete a flight |
 
-## Performanse
+---
 
-- **Frekvencija čitanja**: 2Hz (svakih 0.5s)
-- **Preciznost visine**: ±25cm (BMP390 specifikacija)
-- **WiFi domet**: 50-100m
-- **Trajanje baterije**: zavisno od izvora napajanja
+## Performance
 
-## Razvoj
+| Metric | Value |
+|--------|-------|
+| Sampling rate | 2 Hz (every 0.5s) |
+| Altitude accuracy | ±25 cm (BMP390 spec) |
+| WiFi range | 50–100 m |
+| Battery life | ~6–8h (20,000mAh power bank) |
 
-Projekat je razvijen kao diplomski rad na Fakultetu tehničkih nauka u Novom Sadu, smer Računarstvo i automatika. Demonstrira praktičnu primenu IoT tehnologija u oblasti sportske avijacije.
+---
 
-### Sledeći koraci u planu
-- GPS modul za praćenje pozicije i brzine
-- Audio signali (buzzer) za variometar tonove
-- Cloud sync funkcionalnost
-- Integrisana analiza termalnih aktivnosti
+## Roadmap
+
+- [ ] GPS module for position and ground speed tracking
+- [ ] Cloud sync functionality
+- [ ] Integrated thermal activity analysis
+
+---
+
+## About
+
+Developed as a thesis project at the **Faculty of Technical Sciences, University of Novi Sad**, Department of Computing and Automation. Demonstrates practical application of IoT technologies in sport aviation.
