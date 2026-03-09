@@ -169,7 +169,7 @@ interface wlan0
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/variometar.git
+git clone https://github.com/ognjenzekovic/variometar.git
 cd variometar/rpi
 ```
 
