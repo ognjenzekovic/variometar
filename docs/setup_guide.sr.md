@@ -2,6 +2,10 @@
 
 Detaljan vodič za instalaciju i podešavanje IoT variometra na Raspberry Pi 5.
 
+*[Srpska verzija](setup_guide.md)*
+
+---
+
 ## Potreban hardware
 
 ### Obavezni delovi
