@@ -46,7 +46,7 @@
 
 | Main Screen | Recording Active | Flight Details |
 |:-----------:|:----------------:|:--------------:|
-| ![Main](docs/images/screenshot_main.png) | ![Recording](docs/images/screenshot_recording.png) | ![Details](docs/images/screenshot_details.png) |
+| ![Main](docs/images/screenshot_main.jpg) | ![Recording](docs/images/screenshot_recording.jpg) | ![Details](docs/images/screenshot_details.jpg) |
 
 ---
 
