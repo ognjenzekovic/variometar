@@ -97,12 +97,12 @@ variometer/
 
 ## Brza instalacija
 
-1. **Hardware**: Povezati BMP390 na RPi5 I2C pinove (vidi [setup vodič](docs/setup_guide.md))
+1. **Hardware**: Povezati BMP390 na RPi5 I2C pinove (vidi [setup vodič](docs/setup_guide.sr.md))
 2. **Software**: Pokrenuti setup script za dependencies i konfiguraciju
 3. **Network**: Konfigurisati WiFi hotspot funkcionalnost
 4. **Test**: Verifikovati komunikaciju sa senzorom i web interface na `http://192.168.4.1:5000`
 
-Detaljan vodič → [docs/setup_guide.md](docs/setup_guide.md)
+Detaljan vodič → [docs/setup_guide.md](docs/setup_guide.sr.md)
 
 ---
 
